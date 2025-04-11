@@ -1,0 +1,1 @@
+from app.models import meeting, meeting_memberships

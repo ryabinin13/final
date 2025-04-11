@@ -1,0 +1,262 @@
+version: "3.9"
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management
+
+    ports:
+    - '5672:5672'
+    - '15672:15672'
+
+    volumes:
+      - 'rabbitmq_data:/var/lib/rabbitmq'
+
+    environment:
+      RABBITMQ_DEFAULT_USER: 'user'
+      RABBITMQ_DEFAULT_PASS: 'password'
+      
+  userdb:
+    container_name: user_db
+    image: postgres:15-alpine
+    volumes:
+      - userdb_data:/var/lib/postgresql/data/
+    ports:  
+      - "5433:5432" 
+    # expose:
+    #   - 5432
+    environment:
+    
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=user_db
+
+  user:
+    container_name: user_service
+    build:
+      context: ./userservice
+      # dockerfile: Dockerfile
+    command: bash -c 'while !</dev/tcp/userdb/5432; do sleep 2; done; uvicorn app.main:app --host 0.0.0.0 '
+    volumes:
+      - ./userservice:/app
+    ports:
+      - 8000:8000
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://user:password@userdb:5432/user_db
+      - RABBITMQ_HOST=rabbitmq  
+
+    depends_on:
+      - userdb
+      - rabbitmq
+
+  teamdb:
+    container_name: team_db
+    image: postgres:15-alpine
+    volumes:
+      - teamdb_data:/var/lib/postgresql/data/
+    ports:  
+      - "5434:5432" 
+    # expose:
+    #   - 5432
+    environment:
+    
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=team_db
+  team:
+    container_name: team_service
+    build: ./teamservice
+    ports:
+      - 8001:8001
+
+    volumes:
+      - ./teamservice:/app
+
+    command: bash -c 'while !</dev/tcp/teamdb/5432; do sleep 2; done; uvicorn app.main:app --host 0.0.0.0 --port 8001'
+
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://user:password@teamdb:5432/team_db
+      - RABBITMQ_HOST=rabbitmq  
+
+    depends_on:
+      - teamdb
+      - rabbitmq
+
+
+
+  taskdb:
+    container_name: task_db
+    image: postgres:15-alpine
+    volumes:
+      - taskdb_data:/var/lib/postgresql/data/
+    ports:  
+      - "5435:5432" 
+    # expose:
+    #   - 5432
+    environment:
+    
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=task_db
+  task:
+    container_name: task_service
+    build:
+      context: ./taskservice
+      # dockerfile: Dockerfile
+    command: bash -c 'while !</dev/tcp/taskdb/5432; do sleep 2; done; uvicorn app.main:app --host 0.0.0.0 --port 8002'
+    volumes:
+      - ./taskservice:/app
+    ports:
+      - 8002:8002
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://user:password@taskdb:5432/task_db
+      - RABBITMQ_HOST=rabbitmq  
+
+    depends_on:
+      - taskdb
+      - rabbitmq
+
+
+  organizationdb:
+    container_name: organization_db
+    image: postgres:15-alpine
+    volumes:
+      - organizationdb_data:/var/lib/postgresql/data/
+    ports:  
+      - "5436:5432" 
+    # expose:
+    #   - 5432
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=organization_db
+
+  organization:
+    container_name: organization_service
+    build:
+      context: ./organizationservice
+      # dockerfile: Dockerfile
+    command: bash -c 'while !</dev/tcp/organizationdb/5432; do sleep 2; done; uvicorn app.main:app --host 0.0.0.0 --port 8003'
+    volumes:
+      - ./organizationservice:/app
+    ports:
+      - 8003:8003
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://user:password@organizationdb:5432/organization_db
+      - RABBITMQ_HOST=rabbitmq  
+
+    depends_on:
+      - organizationdb
+      - rabbitmq
+
+
+  markdb:
+    container_name: mark_db
+    image: postgres:15-alpine
+    volumes:
+      - markdb_data:/var/lib/postgresql/data/
+    ports:  
+      - "5437:5432" 
+    # expose:
+    #   - 5432
+    environment:
+    
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=mark_db
+
+  mark:
+    container_name: mark_service
+    build:
+      context: ./markservice
+      # dockerfile: Dockerfile
+    command: bash -c 'while !</dev/tcp/markdb/5432; do sleep 2; done; uvicorn app.main:app --host 0.0.0.0 --port 8004'
+    volumes:
+      - ./markservice:/app
+    ports:
+      - 8004:8004
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://user:password@markdb:5432/mark_db
+      - RABBITMQ_HOST=rabbitmq  
+
+    depends_on:
+      - markdb
+      - rabbitmq
+
+  meetingdb:
+    container_name: meeting_db
+    image: postgres:15-alpine
+    volumes:
+      - meetingdb_data:/var/lib/postgresql/data/
+    ports:  
+      - "5438:5432" 
+    # expose:
+    #   - 5432
+    environment:
+    
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=meeting_db
+
+  meeting:
+    container_name: meeting_service
+    build:
+      context: ./meetingservice
+      # dockerfile: Dockerfile
+    command: bash -c 'while !</dev/tcp/meetingdb/5432; do sleep 2; done; uvicorn app.main:app --host 0.0.0.0 --port 8005'
+    volumes:
+      - ./meetingservice:/app
+    ports:
+      - 8005:8005
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://user:password@meetingdb:5432/meeting_db
+      - RABBITMQ_HOST=rabbitmq  
+
+    depends_on:
+      - meetingdb
+      - rabbitmq
+
+
+  calendargdb:
+    container_name: calendar_db
+    image: postgres:15-alpine
+    volumes:
+      - calendardb_data:/var/lib/postgresql/data/
+    ports:  
+      - "5439:5432" 
+    # expose:
+    #   - 5432
+    environment:
+    
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=calendar_db
+
+  calendar:
+    container_name: calendar_service
+    build:
+      context: ./calendarservice
+      # dockerfile: Dockerfile
+    command: bash -c 'while !</dev/tcp/calendardb/5432; do sleep 2; done; uvicorn app.main:app --host 0.0.0.0 --port 8006'
+    volumes:
+      - ./calendarservice:/app
+    ports:
+      - 8005:8005
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://user:password@meetingdb:5432/calendar_db
+      - RABBITMQ_HOST=rabbitmq  
+
+    depends_on:
+      - calendardb
+      - rabbitmq
+
+
+volumes:
+  userdb_data:
+  teamdb_data:
+  taskdb_data:
+  organizationdb_data:
+  markdb_data:
+  meetingdb_data:
+  calendardb_data:
+  rabbitmq_data:
+    driver: local
