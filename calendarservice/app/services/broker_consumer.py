@@ -19,4 +19,3 @@ class BrokerConsumerService:
 
             await self.calendar_repository.create(data)
 
-            await message.ack()

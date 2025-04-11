@@ -7,18 +7,23 @@ from app.services.mark import MarkService
 from config import config
 
 
-def get_mark_repository() -> MarkRepository:
-    return MarkRepository(session=get_async_session())
+async def get_mark_repository() -> MarkRepository:
+    async with get_async_session() as session:
+        return MarkRepository(session=session)
 
-def get_mark_service() -> MarkService:
+async def get_mark_service() -> MarkService:
     from app.main import app
 
-    return MarkService(mark_repository=get_mark_repository(), app_state=app.state)
+    mark_repository = await get_mark_repository()
 
-def get_broker_consumer_service() -> BrokerConsumerService:
+    return MarkService(mark_repository=mark_repository, app_state=app.state)
+
+async def get_broker_consumer_service() -> BrokerConsumerService:
     from app.main import app
 
-    return BrokerConsumerService(mark_repository=get_mark_repository(), app_state=app.state)
+    mark_repository = await get_mark_repository()
+
+    return BrokerConsumerService(mark_repository=mark_repository, app_state=app.state)
 
 def get_current_user_id(request: Request):
     token = request.cookies.get(config.JWT_ACCESS_COOKIE_NAME)
@@ -30,6 +35,8 @@ def get_current_user_id(request: Request):
         user_id = payload.get("uid")
         if user_id is None:
             raise ValueError("Invalid token payload: 'uid' claim not found")
+        if not isinstance(user_id, str):
+            raise ValueError("Invalid token payload: 'uid' claim must be a string")
         return user_id
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
@@ -37,5 +44,3 @@ def get_current_user_id(request: Request):
         raise HTTPException(status_code=401, detail="Invalid token")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server error: {e}")

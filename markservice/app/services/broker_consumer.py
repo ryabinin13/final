@@ -16,7 +16,7 @@ class BrokerConsumerService:
             try:
                 user_id = UUID(user_id)
             except:
-                raise Exception
+                raise ValueError("Неверный тип user_id")
 
             task_id = int(task_id)
             mark = int(mark)
@@ -25,4 +25,3 @@ class BrokerConsumerService:
 
             await self.mark_repository.create(data)
 
-            await message.ack()

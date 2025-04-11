@@ -12,9 +12,7 @@ class MeetingService:
 
 
     async def create_meeting(self, create_meeting_service: CreateMeetingSchema):
-
         data = create_meeting_service.model_dump()
-
         data["date"] = data["date"].replace(tzinfo=None)
 
         return await self.meeting_repository.create(data)
@@ -37,6 +35,5 @@ class MeetingService:
             return await self.meeting_repository.update(meeting=meeting, data=meeting_dict)
 
 
-    async def add_user(self, meeting_id, email):
-
-        await self.app_state.broker_producer_service.publish_message_to_user(str(meeting_id) + " " + str(email))
+    async def add_user(self, meeting_id, add_user_schema):
+        await self.app_state.broker_producer_service.publish_message_to_user(str(meeting_id) + " " + str(add_user_schema.email))

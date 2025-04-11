@@ -10,30 +10,31 @@ class BrokerConsumerService:
         self.organization_repository = organization_repository
 
     async def org_create(self, message: AbstractIncomingMessage):
-        message_body = message.body.decode()
-        team_id, name = str(message_body).split()
-        try:
-            team_id = UUID(team_id)
-        except:
-            return None
-        
-        data = {"name": name, "team_id": team_id}
-        await self.organization_repository.create(data)
+        async with message.process():
+            message_body = message.body.decode()
+            team_id, name = str(message_body).split()
+            try:
+                team_id = UUID(team_id)
+            except:
+                return None
+            
+            data = {"name": name, "team_id": team_id}
+            await self.organization_repository.create(data)
         
 
-        await message.ack()
+
 
 
     async def org_membership_create(self, message: AbstractIncomingMessage):
-        message_body = message.body.decode()
-        org_id, user_id = str(message_body).split()
-        try:
-            user_id = UUID(user_id)
-        except:
-            return None
-        
-        data = {"id": org_id, "user_id": user_id}
-        await self.organization_membership_repository.create(data)
-        
+        async with message.process():
+            message_body = message.body.decode()
+            org_id, user_id = str(message_body).split()
+            try:
+                user_id = UUID(user_id)
+            except:
+                return None
+            
+            data = {"id": org_id, "user_id": user_id}
+            await self.organization_membership_repository.create(data)
+            
 
-        await message.ack()
