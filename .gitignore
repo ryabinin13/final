@@ -1,0 +1,7 @@
+*/.env
+*/.gitignore
+*.pyc
+*__pycache__
+*.venv
+*alembic
+*alembic.ini
