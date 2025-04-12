@@ -27,4 +27,3 @@ class BrokerConsumerService:
             else:
                 print("Такой команды не существует")
 
-            await message.ack()

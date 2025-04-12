@@ -23,7 +23,7 @@ class BrokerConsumerService:
 
                 await self.task_repository.update(task, data)
 
-                await message.ack()
+
 
     
     async def check_task_id(self, message: AbstractIncomingMessage):

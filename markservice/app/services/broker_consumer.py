@@ -25,4 +25,3 @@ class BrokerConsumerService:
 
             await self.mark_repository.create(data)
 
-            await message.ack()

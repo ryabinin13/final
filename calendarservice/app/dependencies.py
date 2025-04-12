@@ -7,23 +7,25 @@ from config import config
 from app.database import get_async_session
 
 
-def get_calendar_repository() ->CalendarRepository:
+async def get_calendar_repository() ->CalendarRepository:
+    async with get_async_session() as session:
+        return CalendarRepository(session=session)
 
-    return CalendarRepository(session=get_async_session())
 
-
-def get_calendar_service() -> CalendarService:
+async def get_calendar_service() -> CalendarService:
     from app.main import app
+    calendar_repository= await get_calendar_repository()
 
-    return CalendarService(caendar_repository=get_calendar_repository(), app_state=app.state)
+    return CalendarService(calendar_repository=calendar_repository, app_state=app.state)
 
 
-def get_broker_consumer_service() -> BrokerConsumerService:
+async def get_broker_consumer_service() -> BrokerConsumerService:
     from app.main import app
+    calendar_repository= await get_calendar_repository()
 
-    return BrokerConsumerService(calendar_repository=get_calendar_repository(), app_state=app.state)
+    return BrokerConsumerService(calendar_repository=calendar_repository, app_state=app.state)
 
-def get_current_user(request: Request):
+def get_current_user_id(request: Request):
     token = request.cookies.get(config.JWT_ACCESS_COOKIE_NAME)
     if not token:
         raise HTTPException(status_code=401, detail="Token not found")
@@ -33,6 +35,8 @@ def get_current_user(request: Request):
         user_id = payload.get("uid")
         if user_id is None:
             raise ValueError("Invalid token payload: 'uid' claim not found")
+        if not isinstance(user_id, str):
+            raise ValueError("Invalid token payload: 'uid' claim must be a string")
         return user_id
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
@@ -40,5 +44,3 @@ def get_current_user(request: Request):
         raise HTTPException(status_code=401, detail="Invalid token")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server error: {e}")

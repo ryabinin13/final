@@ -21,3 +21,5 @@ config.JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 config.JWT_ACCESS_TOKEN_EXPIRES = 300
 
 security = AuthX(config=config)
+
+RABBIT_ATTEMPTS = 20

@@ -10,22 +10,34 @@ from app.database import Base, async_engine
 from app.dependencies import get_broker_consumer_service
 from app.services.broker_producer import BrokerProducerService
 from config import RABBIT_CONN
+from config import RABBIT_ATTEMPTS
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO) 
+
+console_handler = logging.StreamHandler()  
+
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+
+logger.addHandler(console_handler)
 
 
+async def connect_to_rabbitmq() -> aio_pika.RobustConnection: 
 
-async def connect_to_rabbitmq():
-    for attempt in range(20): 
+    for attempt in range(RABBIT_ATTEMPTS):
         try:
             connection = await aio_pika.connect_robust(
                 RABBIT_CONN, timeout=5
             )
-            print("Connected to RabbitMQ!")
+            logger.info("Connected to RabbitMQ!")
             return connection
         except aio_pika.exceptions.AMQPError as e:
-            print(f"Attempt {attempt+1} failed (AMQPError): {e}")
-            await asyncio.sleep(2) 
-        except Exception as e:  
-            print(f"Attempt {attempt+1} failed (General Error): {e}")
+            logger.warning(f"Attempt {attempt+1} failed (AMQPError): {e}")
+            await asyncio.sleep(2)
+        except Exception as e:
+            logger.exception(f"Attempt {attempt+1} failed (General Error): {e}") 
             await asyncio.sleep(2)
 
     raise Exception("Failed to connect to RabbitMQ after multiple attempts")
@@ -33,8 +45,8 @@ async def connect_to_rabbitmq():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-    async with async_engine.begin() as conn:
-      await conn.run_sync(Base.metadata.create_all)
+    # async with async_engine.begin() as conn:
+    #   await conn.run_sync(Base.metadata.create_all)
 
     try:
         alembic_cfg = Config("alembic.ini")
@@ -82,8 +94,19 @@ async def lifespan(app: FastAPI):
 
 
     yield
+    
 
-    await app.state.rabbit_connection.close()
+
+    consumer_team_task.cancel()
+    consumer_task_task.cancel()
+    consumer_meeting_task.cancel()
+    consumer_org_task.cancel()
+    await asyncio.gather(consumer_team_task, consumer_task_task, consumer_meeting_task, consumer_org_task, return_exceptions=True) 
+
+    await app.channel.close()
+
+
+    await app.rabbit_connection.close()
 
 
     
